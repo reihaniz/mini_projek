@@ -2,12 +2,17 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"mini_projek/model"
 	"net/http"
 	"strconv"
 
+	"context"
+
 	"github.com/golang-jwt/jwt"
+	"github.com/google/generative-ai-go/genai"
 	"github.com/labstack/echo/v4"
+	"google.golang.org/api/option"
 )
 
 type TransportController struct {
@@ -30,7 +35,8 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 	}
 
 	transportType := c.FormValue("transport_type")
-	distance, err := strconv.ParseFloat(c.FormValue("distance"), 64)
+	distanceStr := c.FormValue("distance")
+	distance, err := strconv.ParseFloat(distanceStr, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid distance value"})
 	}
@@ -39,15 +45,44 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid transport type"})
 	}
 
+	// Simpan perjalanan
 	err = model.SimpanPerjalanan(tc.DB, userID, transportType, distance)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to save journey"})
 	}
 
+	// Hitung emisi dari perjalanan ini
 	emissions := model.HitungEmisi(transportType, distance)
+
+	// Temukan transportasi dengan emisi terendah yang bukan sepeda atau jalan kaki
+	minEmissionTransport := ""
+	minEmission := float64(1<<63 - 1) // atur ke nilai float64 maksimum
+
+	for t, rate := range model.EmissionRates {
+		if rate > 0 && rate < minEmission {
+			minEmission = rate
+			minEmissionTransport = t
+		}
+	}
+
+	// Hitung emisi untuk 1 km transportasi dengan emisi terendah
+	lowestEmissions := model.HitungEmisi(minEmissionTransport, distance)
+
+	// Buat prompt untuk API Gemini
+	prompt := fmt.Sprintf("Bagaimana pendapat anda jika memakai transportasi %s dengan jarak %s km dengan emisi %.2f gram CO2? jika emisi tinggi sarankan dan jelaskan mengapa", transportType, distanceStr, emissions)
+
+	// Panggil API Gemini
+	hasilAI, err := AIPanggil(prompt)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to call Gemini API"})
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"message":   "Journey recorded successfully",
-		"emissions": emissions,
+		"message":                   "Journey recorded successfully",
+		"emissions":                 emissions,
+		"lowest_emission_transport": minEmissionTransport,
+		"lowest_emissions":          lowestEmissions,
+		"hasil_ai":                  hasilAI,
 	})
 }
 
@@ -81,9 +116,14 @@ func (tc *TransportController) BandingkanEmisi(c echo.Context) error {
 }
 
 func (tc *TransportController) HitungEmisiPerjalanan(c echo.Context) error {
-	// Tidak perlu user ID untuk perhitungan sederhana
 	transportType := c.QueryParam("transport_type")
-	distance, err := strconv.ParseFloat(c.QueryParam("distance"), 64)
+	distanceStr := c.QueryParam("distance")
+
+	if distanceStr == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Distance parameter is required"})
+	}
+
+	distance, err := strconv.ParseFloat(distanceStr, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid distance value"})
 	}
@@ -98,4 +138,21 @@ func (tc *TransportController) HitungEmisiPerjalanan(c echo.Context) error {
 		"distance":       distance,
 		"emissions":      emissions,
 	})
+}
+func AIPanggil(prompt string) (string, error) {
+	ctx := context.Background()
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyDfi6KqSa6wM9_wPBj4tR_kNkqPsut0-qg"))
+	if err != nil {
+		return "", fmt.Errorf("failed to create Gemini client: %v", err)
+	}
+	defer client.Close()
+
+	model := client.GenerativeModel("gemini-1.5-flash")
+	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate content from Gemini API: %v", err)
+	}
+
+	// Return the generated response
+	return fmt.Sprintf("%s", resp.Candidates[0].Content.Parts[0]), nil
 }
