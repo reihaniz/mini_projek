@@ -30,18 +30,26 @@ var EmissionRates = map[string]float64{
 	"jalan_kaki": 0.0,
 }
 
-func HitungEmisi(transportType string, distance float64) float64 {
-	rate := EmissionRates[transportType]
-	return rate * distance
+func HitungEmisi(db *sql.DB, transportType string, distance float64) (float64, error) {
+	var emissionRate float64
+	query := `SELECT emission_rate FROM mode_transportasi WHERE tipe_kendaraan = ?`
+	err := db.QueryRow(query, transportType).Scan(&emissionRate)
+	if err != nil {
+		return 0, err
+	}
+	return emissionRate * distance, nil
 }
 
 func SimpanPerjalanan(db *sql.DB, userID int, transportType string, distance float64) error {
-	emissionAmount := HitungEmisi(transportType, distance)
+	emissionAmount, err := HitungEmisi(db, transportType, distance)
+	if err != nil {
+		return err
+	}
 
 	query := `INSERT INTO journeys (user_id, transport_type, distance, emission_amount, date) 
               VALUES (?, ?, ?, ?, NOW())`
 
-	_, err := db.Exec(query, userID, transportType, distance, emissionAmount)
+	_, err = db.Exec(query, userID, transportType, distance, emissionAmount)
 	return err
 }
 

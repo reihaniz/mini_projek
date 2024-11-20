@@ -26,9 +26,28 @@ func getUserIDFromToken(c echo.Context) (int, error) {
 	userID := int(claims["user_id"].(float64))
 	return userID, nil
 }
+func getEmissionRates(db *sql.DB) (map[string]float64, error) {
+	query := "SELECT tipe_kendaraan, emission_rate FROM mode_transportasi"
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	emissionRates := make(map[string]float64)
+	for rows.Next() {
+		var transportType string
+		var emissionRate float64
+		if err := rows.Scan(&transportType, &emissionRate); err != nil {
+			return nil, err
+		}
+		emissionRates[transportType] = emissionRate
+	}
+	return emissionRates, nil
+}
 
 func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
-	// Mengambil user ID dari token
+	// Ambil user ID dari token
 	userID, err := getUserIDFromToken(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Invalid token"})
@@ -41,7 +60,12 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid distance value"})
 	}
 
-	if _, exists := model.EmissionRates[transportType]; !exists {
+	emissionRates, err := getEmissionRates(tc.DB)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to retrieve emission rates"})
+	}
+
+	if _, exists := emissionRates[transportType]; !exists {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid transport type"})
 	}
 
@@ -52,13 +76,16 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 	}
 
 	// Hitung emisi dari perjalanan ini
-	emissions := model.HitungEmisi(transportType, distance)
+	emissions, err := model.HitungEmisi(tc.DB, transportType, distance)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to calculate emissions"})
+	}
 
 	// Temukan transportasi dengan emisi terendah yang bukan sepeda atau jalan kaki
 	minEmissionTransport := ""
-	minEmission := float64(1<<63 - 1) // atur ke nilai float64 maksimum
+	minEmission := float64(1<<63 - 1) // Set to maximum possible float64 value
 
-	for t, rate := range model.EmissionRates {
+	for t, rate := range emissionRates {
 		if rate > 0 && rate < minEmission {
 			minEmission = rate
 			minEmissionTransport = t
@@ -66,7 +93,10 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 	}
 
 	// Hitung emisi untuk 1 km transportasi dengan emisi terendah
-	lowestEmissions := model.HitungEmisi(minEmissionTransport, distance)
+	lowestEmissions, err := model.HitungEmisi(tc.DB, minEmissionTransport, distance)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to calculate lowest emissions"})
+	}
 
 	// Buat prompt untuk API Gemini
 	prompt := fmt.Sprintf("Bagaimana pendapat anda jika memakai transportasi %s dengan jarak %s km dengan emisi %.2f gram CO2? jika emisi tinggi sarankan dan jelaskan mengapa", transportType, distanceStr, emissions)
@@ -132,7 +162,10 @@ func (tc *TransportController) HitungEmisiPerjalanan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid transport type"})
 	}
 
-	emissions := model.HitungEmisi(transportType, distance)
+	emissions, err := model.HitungEmisi(tc.DB, transportType, distance)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to calculate emissions"})
+	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"transport_type": transportType,
 		"distance":       distance,
