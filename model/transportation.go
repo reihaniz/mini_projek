@@ -21,14 +21,6 @@ type Journey struct {
 }
 
 // Konstanta emisi karbon (gram CO2 per kilometer)
-var EmissionRates = map[string]float64{
-	"mobil":      120.0,
-	"motor":      72.0,
-	"bus":        68.0,
-	"kereta":     41.0,
-	"sepeda":     0.0,
-	"jalan_kaki": 0.0,
-}
 
 func HitungEmisi(db *sql.DB, transportType string, distance float64) (float64, error) {
 	var emissionRate float64
