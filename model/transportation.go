@@ -77,7 +77,7 @@ func AmbilRiwayatPerjalanan(db *sql.DB, userID int) ([]Journey, error) {
 	return journeys, nil
 }
 
-func BandingkanEmisi(db *sql.DB, userID int) (map[string]float64, error) {
+func TotalEmisi(db *sql.DB, userID int) (map[string]float64, error) {
 	query := `SELECT transport_type, SUM(emission_amount) as total_emission 
               FROM journeys 
               WHERE user_id = ? 

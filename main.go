@@ -34,7 +34,7 @@ func main() {
 	}))
 	t.POST("/journey", transportController.CatatPerjalanan)
 	t.GET("/history", transportController.AmbilRiwayat)
-	t.GET("/compare", transportController.BandingkanEmisi)
+	t.GET("/total", transportController.TotalEmisi)
 	t.GET("/calculate", transportController.HitungEmisiPerjalanan)
 
 	e.Start(":8080")

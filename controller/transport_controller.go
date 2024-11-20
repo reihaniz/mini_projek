@@ -132,13 +132,13 @@ func (tc *TransportController) AmbilRiwayat(c echo.Context) error {
 	return c.JSON(http.StatusOK, journeys)
 }
 
-func (tc *TransportController) BandingkanEmisi(c echo.Context) error {
+func (tc *TransportController) TotalEmisi(c echo.Context) error {
 	userID, err := getUserIDFromToken(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Invalid token"})
 	}
 
-	comparison, err := model.BandingkanEmisi(tc.DB, userID)
+	comparison, err := model.TotalEmisi(tc.DB, userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to compare emissions"})
 	}
