@@ -158,10 +158,6 @@ func (tc *TransportController) HitungEmisiPerjalanan(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid distance value"})
 	}
 
-	if _, exists := model.EmissionRates[transportType]; !exists {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid transport type"})
-	}
-
 	emissions, err := model.HitungEmisi(tc.DB, transportType, distance)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to calculate emissions"})
