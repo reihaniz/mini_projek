@@ -37,7 +37,7 @@ func (uc *UserController) Login(c echo.Context) error {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		"exp":     time.Now().Add(72 * time.Hour).Unix(),
 	})
 
 	tokenString, err := token.SignedString(jwtSecret)
