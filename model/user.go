@@ -72,7 +72,7 @@ func AmbilUserByID(db *sql.DB, id int) (User, error) {
 	err := db.QueryRow("SELECT id, username FROM users WHERE id = ?", id).Scan(&user.ID, &user.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return user, errors.New("user not found")
+			return user, errors.New("user tidak ditemukan")
 		}
 		return user, err
 	}
