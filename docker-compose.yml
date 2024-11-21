@@ -7,5 +7,5 @@ services:
     ports:
       - "8080:8080" # Sesuaikan port dengan aplikasi
     environment:
-      - ENV=production # Contoh environment variable
+      - ENV=production
     restart: always

@@ -1,13 +1,11 @@
-# Menggunakan base image Golang
 FROM golang:1.23.1
 
-# Set working directory di dalam container
+# tetapin working directory nya
 WORKDIR /app
 
-# Copy semua file dari direktori lokal ke dalam container
+# Copy semua file dari direktori lokal ke container
 COPY . .
 
-# Download dependencies (jika menggunakan go modules)
 RUN go mod tidy
 
 # Build aplikasi
