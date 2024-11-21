@@ -51,7 +51,7 @@ func (uc *UserController) Login(c echo.Context) error {
 func (uc *UserController) AmbilSemuaUsers(c echo.Context) error {
 	users, err := model.AmbilSemuaUsers(uc.DB)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error fetching users"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Error mengambil data user"})
 	}
 	return c.JSON(http.StatusOK, users)
 }
@@ -64,7 +64,7 @@ func (uc *UserController) AmbilUserByID(c echo.Context) error {
 
 	user, err := model.AmbilUserByID(uc.DB, id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"message": "User not found"})
+		return c.JSON(http.StatusNotFound, map[string]string{"message": "User tidak ditemukan"})
 	}
 	return c.JSON(http.StatusOK, user)
 }

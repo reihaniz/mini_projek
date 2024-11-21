@@ -57,28 +57,28 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 	distanceStr := c.FormValue("distance")
 	distance, err := strconv.ParseFloat(distanceStr, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid distance value"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid nilai distance"})
 	}
 
 	emissionRates, err := getEmissionRates(tc.DB)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to retrieve emission rates"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Gagal untuk ambi ldata emission rates"})
 	}
 
 	if _, exists := emissionRates[transportType]; !exists {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid transport type"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Transport type invalid"})
 	}
 
 	// Simpan perjalanan
 	err = model.SimpanPerjalanan(tc.DB, userID, transportType, distance)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to save journey"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Gagal Menyimpan Perjalanan"})
 	}
 
 	// Hitung emisi dari perjalanan ini
 	emissions, err := model.HitungEmisi(tc.DB, transportType, distance)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to calculate emissions"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Gagal menghitung emisi"})
 	}
 
 	// Temukan transportasi dengan emisi terendah yang bukan sepeda atau jalan kaki
@@ -104,7 +104,7 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 	// Panggil API Gemini
 	hasilAI, err := AIPanggil(prompt)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to call Gemini API"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Gagal memanggil Gemini API"})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -119,7 +119,7 @@ func (tc *TransportController) CatatPerjalanan(c echo.Context) error {
 func (tc *TransportController) AmbilRiwayat(c echo.Context) error {
 	userID, err := getUserIDFromToken(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Invalid token"})
+		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Token Invalid"})
 	}
 
 	journeys, err := model.AmbilRiwayatPerjalanan(tc.DB, userID)
@@ -135,12 +135,12 @@ func (tc *TransportController) AmbilRiwayat(c echo.Context) error {
 func (tc *TransportController) TotalEmisi(c echo.Context) error {
 	userID, err := getUserIDFromToken(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Invalid token"})
+		return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Token Invalid"})
 	}
 
 	comparison, err := model.TotalEmisi(tc.DB, userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Failed to compare emissions"})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Gagal untuk mentotalkan emisi"})
 	}
 	return c.JSON(http.StatusOK, comparison)
 }
@@ -150,7 +150,7 @@ func (tc *TransportController) HitungEmisiPerjalanan(c echo.Context) error {
 	distanceStr := c.QueryParam("distance")
 
 	if distanceStr == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Distance parameter is required"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Parameter Distance diperlukan"})
 	}
 
 	distance, err := strconv.ParseFloat(distanceStr, 64)
