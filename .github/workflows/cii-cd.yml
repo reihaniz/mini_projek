@@ -65,7 +65,3 @@ jobs:
       - name: Pull Docker image
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/mini_projek:latest
-      - name: Restart Docker containers
-        run: |
-          docker-compose down  # Menghentikan dan menghapus container
-          docker-compose up -d  # Menjalankan container baru di background
