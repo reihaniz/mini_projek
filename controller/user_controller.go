@@ -64,7 +64,7 @@ func (uc *UserController) AmbilUserByID(c echo.Context) error {
 
 	user, err := model.AmbilUserByID(uc.DB, id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"message": "User tidak ditemukan"})
+		return c.JSON(http.StatusNotFound, map[string]string{"message": "User tidak ditemukan~~"})
 	}
 	return c.JSON(http.StatusOK, user)
 }
