@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    image: akunbc/mini_projek:latest
+    container_name: mini_projek
+    ports:
+      - "8080:8080" # Sesuaikan port dengan aplikasi
+    environment:
+      - ENV=production # Contoh environment variable
+    restart: always
